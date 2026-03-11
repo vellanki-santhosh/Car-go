@@ -1,8 +1,13 @@
 const { useState, useEffect, useRef } = React;
 
 // ─── CANVAS SIZE & ARENA BOUNDS ──────────────────────────────────────────────
-const W = window.innerWidth, H = window.innerHeight;
-const BL = 40, BR = W - 40, BT = 40, BB = H - 40;
+const IS_MOBILE = window.matchMedia("(max-width: 900px)").matches || ("ontouchstart" in window);
+const IS_LANDSCAPE = window.innerWidth > window.innerHeight;
+const MOBILE_CONTROL_SPACE = IS_MOBILE ? (IS_LANDSCAPE ? 110 : 180) : 0;
+const W = Math.max(320, window.innerWidth);
+const H = Math.max(IS_MOBILE ? (IS_LANDSCAPE ? 240 : 360) : 520, window.innerHeight - MOBILE_CONTROL_SPACE);
+const EDGE = IS_MOBILE ? 18 : 40;
+const BL = EDGE, BR = W - EDGE, BT = EDGE, BB = H - EDGE;
 const MAX_LIVES = 3;
 const INV_FRAMES = 150;
 const SHAKE_HIT = 8, SHAKE_WALL = 5;
@@ -738,13 +743,44 @@ function CarGo() {
 
   const tier=TIERS[ui.tier], next=TIERS[ui.tier+1];
   const upgPct=next?Math.min(((ui.coins-tier.minC)/(next.minC-tier.minC))*100,100):100;
+  const touchBtnSize = IS_MOBILE
+    ? Math.max(56, Math.min(window.innerWidth * 0.17, 76))
+    : Math.max(44, Math.min(window.innerWidth * 0.11, 60));
+  const restartLabel = ui.phase === "menu" ? "START" : ui.phase === "gameover" ? "RETRY" : "RESTART";
+  const pauseLabel = ui.phase === "paused" ? "RESUME" : ui.phase === "menu" ? "GO" : "PAUSE";
+  const triggerSpace = () => {
+    const ev = new KeyboardEvent("keydown", { code: "Space", bubbles: true });
+    window.dispatchEvent(ev);
+  };
 
   return (
-    <div style={{background:"#040610",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:FONT_TITLE}}>
+    <div style={{
+      background:"#040610",
+      minHeight:"100dvh",
+      display:"flex",
+      flexDirection:"column",
+      alignItems:"center",
+      justifyContent: IS_MOBILE ? "flex-start" : "center",
+      paddingTop: IS_MOBILE ? 6 : 0,
+      paddingBottom: IS_MOBILE ? "max(132px, env(safe-area-inset-bottom))" : 0,
+      fontFamily:FONT_TITLE,
+    }}>
 
       {/* ── Canvas ─────────────────────────────────────────────── */}
       <div style={{position:"relative",boxShadow:"0 0 60px rgba(0,0,0,0.8),0 0 120px rgba(0,0,0,0.5)"}}>
-        <canvas ref={canvasRef} width={W} height={H} style={{display:"block",borderRadius:6}}/>
+        <canvas
+          ref={canvasRef}
+          width={W}
+          height={H}
+          style={{
+            display:"block",
+            borderRadius:6,
+            width: IS_MOBILE ? "100vw" : `${W}px`,
+            maxWidth:"100vw",
+            height: IS_MOBILE ? "auto" : `${H}px`,
+            touchAction:"none",
+          }}
+        />
 
         {/* ── HUD overlay ─────────────────────────────────────── */}
         {(ui.phase==="playing"||ui.phase==="countdown")&&(
@@ -918,97 +954,83 @@ function CarGo() {
       </div>
 
       {/* ── Touch controls ─────────────────────────────────────── */}
-      {/* Desktop: small controls below, Mobile: larger controls at bottom */}
       <div className="mobile-controls" style={{
-        display:'flex',
-        gap:8,
-        marginTop:14,
-        alignItems:'center',
-        flexWrap:'wrap',
-        justifyContent:'center',
-        '@media (maxWidth: 768px)': {
-          position: 'fixed',
-          bottom: 20,
-          left: 0,
-          right: 0,
-          justifyContent: 'space-around',
-          padding: '0 10px',
-          zIndex: 1000,
-        }
+        position: IS_MOBILE ? "fixed" : "relative",
+        left: IS_MOBILE ? 0 : "auto",
+        right: IS_MOBILE ? 0 : "auto",
+        bottom: IS_MOBILE ? "max(8px, env(safe-area-inset-bottom))" : "auto",
+        zIndex: 1000,
+        display:"flex",
+        justifyContent:"center",
+        marginTop: IS_MOBILE ? 0 : 14,
+        pointerEvents:"none",
       }}>
-        {/* Directional Pad - Left side */}
         <div style={{
-          display:'grid',
-          gridTemplateColumns:'repeat(3, minmax(44px, 60px))',
-          gridTemplateRows:'repeat(3, minmax(44px, 60px))',
-          gap: 4,
+          display:"flex",
+          gap: IS_MOBILE ? 12 : 8,
+          alignItems:"center",
+          justifyContent: IS_MOBILE ? "space-between" : "center",
+          width: IS_MOBILE ? "min(560px, calc(100vw - 16px))" : "auto",
+          padding: IS_MOBILE ? "8px 10px" : 0,
+          background: IS_MOBILE ? "linear-gradient(180deg, rgba(4,6,16,0.2), rgba(4,6,16,0.72))" : "transparent",
+          borderRadius: IS_MOBILE ? 16 : 0,
+          backdropFilter: IS_MOBILE ? "blur(4px)" : "none",
+          pointerEvents:"auto",
         }}>
-          <div/>
-          <TBtn label="▲" code="ArrowUp" keysRef={keysRef} size={Math.min(window.innerWidth * 0.12, 60)}/>
-          <div/>
-          <TBtn label="◀" code="ArrowLeft" keysRef={keysRef} size={Math.min(window.innerWidth * 0.12, 60)}/>
-          <TBtn label="▼" code="ArrowDown" keysRef={keysRef} size={Math.min(window.innerWidth * 0.12, 60)}/>
-          <TBtn label="▶" code="ArrowRight" keysRef={keysRef} size={Math.min(window.innerWidth * 0.12, 60)}/>
-        </div>
-        
-        {/* Action Buttons - Right side */}
-        <div style={{display:'flex',flexDirection:'column',gap: 8}}>
-          <button 
-            onClick={()=>startRef.current?.()}
-            style={{
-              padding: '12px 28px',
-              background: 'linear-gradient(135deg, #44ff44, #22aa22)',
-              color: '#000',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: FONT_TITLE,
-              letterSpacing: 2,
-              boxShadow: '0 0 15px #44ff4466',
-              minWidth: 100,
-            }}
-          >START</button>
-          <button 
-            onClick={()=>{
-              const ev=new KeyboardEvent("keydown",{code:"Space",bubbles:true});
-              window.dispatchEvent(ev);
-            }}
-            style={{
-              padding: '12px 28px',
-              background: 'linear-gradient(135deg, #ffaa00, #ff6600)',
-              color: '#000',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: FONT_TITLE,
-              letterSpacing: 2,
-              boxShadow: '0 0 15px #ffaa0066',
-              minWidth: 100,
-            }}
-          >PAUSE</button>
+          {/* Directional pad */}
+          <div style={{
+            display:"grid",
+            gridTemplateColumns:`repeat(3, ${touchBtnSize}px)`,
+            gridTemplateRows:`repeat(3, ${touchBtnSize}px)`,
+            gap: IS_MOBILE ? 6 : 4,
+          }}>
+            <div/>
+            <TBtn label="▲" code="ArrowUp" keysRef={keysRef} size={touchBtnSize}/>
+            <div/>
+            <TBtn label="◀" code="ArrowLeft" keysRef={keysRef} size={touchBtnSize}/>
+            <TBtn label="▼" code="ArrowDown" keysRef={keysRef} size={touchBtnSize}/>
+            <TBtn label="▶" code="ArrowRight" keysRef={keysRef} size={touchBtnSize}/>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{display:"flex",flexDirection:"column",gap: 8}}>
+            <button
+              onClick={() => startRef.current?.()}
+              style={{
+                padding: IS_MOBILE ? "13px 18px" : "12px 28px",
+                background: "linear-gradient(135deg, #44ff44, #22aa22)",
+                color: "#000",
+                border: "none",
+                borderRadius: 8,
+                fontSize: IS_MOBILE ? 13 : 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: FONT_TITLE,
+                letterSpacing: 2,
+                boxShadow: "0 0 15px #44ff4466",
+                minWidth: IS_MOBILE ? 110 : 100,
+              }}
+            >{restartLabel}</button>
+            <button
+              onClick={triggerSpace}
+              style={{
+                padding: IS_MOBILE ? "13px 18px" : "12px 28px",
+                background: "linear-gradient(135deg, #ffaa00, #ff6600)",
+                color: "#000",
+                border: "none",
+                borderRadius: 8,
+                fontSize: IS_MOBILE ? 13 : 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: FONT_TITLE,
+                letterSpacing: 2,
+                boxShadow: "0 0 15px #ffaa0066",
+                minWidth: IS_MOBILE ? 110 : 100,
+              }}
+            >{pauseLabel}</button>
+          </div>
         </div>
       </div>
-      
-      {/* Mobile-specific: Extra large touch zones overlay */}
-      <style>{`
-        @media (max-width: 768px) {
-          .mobile-controls {
-            position: fixed !important;
-            bottom: 10px !important;
-            left: 0 !important;
-            right: 0 !important;
-            justify-content: space-around !important;
-            padding: 5px 10px !important;
-            background: rgba(0,0,0,0.5) !important;
-            border-radius: 15px !important;
-            z-index: 1000 !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
