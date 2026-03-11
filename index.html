@@ -2,44 +2,346 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#3bbcff" />
+  <meta name="description" content="CarGo Pro: a premium arcade driving challenge with upgrades, powerups, and mobile controls." />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./sprites/car_sprite_01.png" />
   <title>CarGo Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
   <style>
+    :root {
+      --bg-0: #050913;
+      --bg-1: #0a1222;
+      --ink-0: #e7f1ff;
+      --ink-1: #8ea8ca;
+      --line: rgba(101, 158, 220, 0.18);
+      --cyan: #67d8ff;
+      --amber: #ffb86f;
+      --ok: #58d86d;
+    }
+    * { box-sizing: border-box; }
     html, body { margin: 0; width: 100%; height: 100%; }
     body {
       min-height: 100dvh;
-      background: radial-gradient(circle at top, #0b1a35, #050811 80%);
-      color: #eef;
-      font-family: system-ui, sans-serif;
+      color: var(--ink-0);
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
       overflow: hidden;
       overscroll-behavior: none;
       touch-action: none;
+      background:
+        radial-gradient(1200px 520px at 75% -20%, rgba(83, 170, 255, 0.25), transparent 60%),
+        radial-gradient(900px 420px at -10% 90%, rgba(255, 184, 111, 0.2), transparent 64%),
+        linear-gradient(180deg, var(--bg-1), var(--bg-0));
     }
-    #root { width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; }
+
+    .atmo {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .atmo-grid {
+      position: absolute;
+      inset: -8% -4%;
+      background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(circle at center, black 38%, transparent 88%);
+      animation: drift 18s linear infinite alternate;
+    }
+    .atmo-orb {
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(18px);
+      opacity: 0.55;
+      animation: floaty 8s ease-in-out infinite;
+    }
+    .atmo-orb.a {
+      width: 340px;
+      height: 340px;
+      left: -100px;
+      top: 12%;
+      background: radial-gradient(circle, rgba(103, 216, 255, 0.46), rgba(103, 216, 255, 0));
+    }
+    .atmo-orb.b {
+      width: 440px;
+      height: 440px;
+      right: -180px;
+      bottom: -140px;
+      background: radial-gradient(circle, rgba(255, 184, 111, 0.46), rgba(255, 184, 111, 0));
+      animation-delay: 1.2s;
+    }
+
+    .loader {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, rgba(6, 11, 20, 0.96), rgba(6, 11, 20, 0.98));
+      transition: opacity 420ms ease;
+    }
+    .loader.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .loader-card {
+      width: min(90vw, 360px);
+      border: 1px solid rgba(108, 162, 221, 0.38);
+      border-radius: 14px;
+      background: rgba(8, 15, 28, 0.85);
+      box-shadow: 0 20px 48px rgba(0,0,0,0.55);
+      padding: 18px 16px 14px;
+      text-align: center;
+    }
+    .loader-title {
+      font: 800 26px "Sora", sans-serif;
+      letter-spacing: 4px;
+      color: #eef8ff;
+      text-transform: uppercase;
+    }
+    .loader-sub {
+      margin-top: 6px;
+      font: 600 11px "Sora", sans-serif;
+      letter-spacing: 2px;
+      color: #7fa0c3;
+      text-transform: uppercase;
+    }
+    .loader-bar {
+      margin-top: 14px;
+      height: 6px;
+      width: 100%;
+      border-radius: 99px;
+      background: rgba(104, 162, 223, 0.16);
+      overflow: hidden;
+    }
+    .loader-fill {
+      height: 100%;
+      width: 10%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--amber));
+      box-shadow: 0 0 18px rgba(84, 182, 255, 0.55);
+      transition: width 240ms ease;
+    }
+
+    .site-bar {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(108, 162, 221, 0.38);
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: rgba(8, 15, 28, 0.74);
+      box-shadow: inset 0 0 0 1px rgba(18, 36, 58, 0.7);
+      color: #d8e9ff;
+    }
+    .brand-badge {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(140deg, var(--cyan), var(--amber));
+      box-shadow: 0 0 16px rgba(103, 216, 255, 0.55);
+    }
+    .brand-text {
+      font: 700 12px "Sora", sans-serif;
+      letter-spacing: 1.7px;
+      text-transform: uppercase;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+    .action-btn {
+      border: 1px solid rgba(108, 162, 221, 0.34);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: rgba(8, 15, 28, 0.72);
+      color: var(--ink-1);
+      font: 700 10px "Sora", sans-serif;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .action-btn.install {
+      color: #05111d;
+      border-color: transparent;
+      background: linear-gradient(130deg, #6ce5a2, #45c9ef);
+      display: none;
+    }
+
+    #root {
+      position: relative;
+      z-index: 2;
+      width: 100vw;
+      height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: reveal 700ms ease both;
+    }
+
     .hint {
       position: fixed;
+      z-index: 3;
       bottom: max(12px, env(safe-area-inset-bottom));
       left: 12px;
-      font-size: 12px;
-      color: rgba(255,255,255,0.75);
-      text-shadow: 0 0 8px rgba(0,0,0,0.45);
+      font: 600 11px "Sora", sans-serif;
+      letter-spacing: 1.5px;
+      color: #87a4c7;
+      text-transform: uppercase;
+      text-shadow: 0 0 14px rgba(84, 168, 255, 0.26);
+      border: 1px solid rgba(108, 162, 221, 0.28);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(6, 12, 22, 0.66);
     }
+
+    @keyframes drift {
+      from { transform: translate3d(-10px, -8px, 0); }
+      to { transform: translate3d(10px, 8px, 0); }
+    }
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-14px); }
+    }
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     @media (max-width: 900px) {
       .hint { display: none; }
       #root { align-items: flex-start; }
+      .site-bar { top: 10px; left: 10px; right: 10px; }
+      .brand-text { font-size: 11px; letter-spacing: 1.3px; }
+      .action-btn { padding: 7px 9px; font-size: 9px; }
     }
   </style>
 </head>
 <body>
+  <div class="atmo" aria-hidden="true">
+    <div class="atmo-grid"></div>
+    <div class="atmo-orb a"></div>
+    <div class="atmo-orb b"></div>
+  </div>
+
+  <div class="loader" id="loader" aria-hidden="true">
+    <div class="loader-card">
+      <div class="loader-title">CarGo Pro</div>
+      <div class="loader-sub">Booting Race System</div>
+      <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
+    </div>
+  </div>
+
+  <div class="site-bar" aria-hidden="true">
+    <div class="brand"><span class="brand-badge"></span><span class="brand-text">CarGo Pro</span></div>
+    <div class="actions">
+      <button id="install-btn" class="action-btn install">Install</button>
+      <button id="full-btn" class="action-btn">Fullscreen</button>
+    </div>
+  </div>
+
   <div id="root"></div>
   <div class="hint">Use Arrow Keys / WASD to drive. Press SPACE to pause.</div>
 
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <script type="text/babel" data-presets="env,react" src="./CarGo_Pro.jsx"></script>
+
+  <script>
+    (function () {
+      const loader = document.getElementById("loader");
+      const fill = document.getElementById("loader-fill");
+      const fullBtn = document.getElementById("full-btn");
+      const installBtn = document.getElementById("install-btn");
+      let p = 8;
+      const t = setInterval(() => {
+        p = Math.min(94, p + Math.random() * 16);
+        fill.style.width = p + "%";
+      }, 120);
+
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          clearInterval(t);
+          fill.style.width = "100%";
+          setTimeout(() => loader.classList.add("hidden"), 220);
+        }, 420);
+      });
+
+      if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
+        fullBtn.style.display = "none";
+      }
+      fullBtn.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+          (document.documentElement.requestFullscreen && document.documentElement.requestFullscreen()) ||
+          (document.documentElement.webkitRequestFullscreen && document.documentElement.webkitRequestFullscreen());
+        } else {
+          (document.exitFullscreen && document.exitFullscreen()) ||
+          (document.webkitExitFullscreen && document.webkitExitFullscreen());
+        }
+      });
+
+      let deferredPrompt = null;
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = "inline-block";
+      });
+      installBtn.addEventListener("click", async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        installBtn.style.display = "none";
+      });
+      window.addEventListener("appinstalled", () => {
+        installBtn.style.display = "none";
+        deferredPrompt = null;
+      });
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      }
+
+      document.addEventListener("touchmove", (e) => {
+        if (e.touches.length > 1) e.preventDefault();
+      }, { passive: false });
+
+      window.hapticFeedback = (type = "light") => {
+        if (!navigator.vibrate) return;
+        const map = {
+          light: 10,
+          medium: 20,
+          heavy: 40,
+          success: [10, 45, 10],
+          warning: [20, 100, 20]
+        };
+        navigator.vibrate(map[type] || 10);
+      };
+    })();
+  </script>
 </body>
 </html>

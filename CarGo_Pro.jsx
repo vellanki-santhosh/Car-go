@@ -11,8 +11,8 @@ const BL = EDGE, BR = W - EDGE, BT = EDGE, BB = H - EDGE;
 const MAX_LIVES = 3;
 const INV_FRAMES = 150;
 const SHAKE_HIT = 8, SHAKE_WALL = 5;
-const FONT_TITLE = "Orbitron, 'Courier New', monospace";
-const FONT_UI    = "Rajdhani, 'Segoe UI', monospace";
+const FONT_TITLE = "Sora, 'Trebuchet MS', sans-serif";
+const FONT_UI    = "Space Grotesk, 'Segoe UI', sans-serif";
 
 // ─── CAR TIERS ───────────────────────────────────────────────────────────────
 const TIERS = [
@@ -168,7 +168,7 @@ function CarGo() {
   useEffect(()=>{
     const link=document.createElement("link");
     link.rel="stylesheet";
-    link.href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&display=swap";
+    link.href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap";
     document.head.appendChild(link);
     return ()=>{ try{document.head.removeChild(link);}catch(e){} };
   },[]);
@@ -202,6 +202,13 @@ function CarGo() {
     const sfxUpgrade = ()=>{ [523,659,784,1046].forEach((f,i)=>beep(f,"triangle",0.12,0.18,i*0.08)); };
     const sfxHit     = ()=>{ beep(120,"sawtooth",0.12,0.25); };
     const sfxPup     = ()=>{ beep(660,"sine",0.06,0.15); beep(880,"sine",0.06,0.12,0.06); };
+    
+    // Haptic feedback helper
+    const triggerHaptic = (type = 'light') => {
+      if (window.hapticFeedback) {
+        window.hapticFeedback(type);
+      }
+    };
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     const mkObs = existing => {
@@ -395,7 +402,7 @@ function CarGo() {
       if(hitWall){
         addShake(SHAKE_WALL);
         if(g.invincible<=0 && g.eff.shield<=0){
-          sfxHit(); g.lives--;
+          sfxHit(); triggerHaptic('medium'); g.lives--;
           g.invincible=INV_FRAMES; g.combo=0;
           for(let j=0;j<10;j++){const a=rnd(0,Math.PI*2);g.parts.push({x:car.x,y:car.y,vx:Math.cos(a)*rnd(2,5),vy:Math.sin(a)*rnd(2,5),life:rnd(18,38),color:"#ff4422",r:rnd(2,5)});}
           if(g.lives<=0){
@@ -415,7 +422,7 @@ function CarGo() {
           const prevSpeed=car.speed;
           car.speed*=-.35;
           if(g.eff.shield<=0 && g.invincible<=0 && Math.abs(prevSpeed)>0.6){
-            sfxHit();
+            sfxHit(); triggerHaptic('heavy');
             addShake(SHAKE_HIT);
             g.lives--; g.invincible=INV_FRAMES; g.combo=0;
             g.stats.obstaclesHit++;
@@ -830,125 +837,73 @@ function CarGo() {
 
         {/* ── Menu screen ─────────────────────────────────────── */}
         {ui.phase==="menu"&&(
-          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(4,6,16,0.96)"}}>
+          <div className="cg-overlay cg-overlay-menu">
+            <div className="cg-orb cg-orb-a"/>
+            <div className="cg-orb cg-orb-b"/>
+            <div className="cg-grid"/>
 
-            {/* Title */}
-            <div style={{fontSize:72,fontWeight:900,color:"#ffdd00",letterSpacing:16,lineHeight:1,
-              textShadow:"0 0 40px #ffaa00,0 0 80px #ff660055,0 3px 0 #8a6800"}}>
-              CAR-GO
-            </div>
-            <div style={{color:"#1c3050",fontSize:10,letterSpacing:8,marginTop:7,marginBottom:30,fontFamily:FONT_UI,fontWeight:600}}>
-              COLLECT · UPGRADE · SURVIVE
-            </div>
+            <div className="cg-panel cg-panel-menu">
+              <div className="cg-kicker">ARCADE CIRCUIT // SEASON 02</div>
+              <div className="cg-title">CAR-GO PRO</div>
+              <div className="cg-subtitle">Precision driving in a high-risk neon district.</div>
 
-            {/* Tier showcase */}
-            <div style={{display:"flex",gap:18,marginBottom:28}}>
-              {TIERS.map((t,i)=>(
-                <div key={i} style={{textAlign:"center"}}>
-                  <div style={{width:62,height:62,background:`${t.paint}12`,borderRadius:12,border:`1px solid ${t.paint}3a`,
-                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,marginBottom:6,
-                    boxShadow:`0 0 14px ${t.paint}1a,inset 0 0 12px ${t.paint}0a`}}>
-                    {["🚗","🚘","🏎","⚡"][i]}
+              <div className="cg-tiers">
+                {TIERS.map((t,i)=>(
+                  <div key={i} className="cg-tier-card" style={{borderColor:`${t.paint}55`, boxShadow:`0 0 0 1px ${t.paint}22 inset`}}>
+                    <div className="cg-tier-index" style={{color:t.paint}}>{`T${i+1}`}</div>
+                    <div className="cg-tier-name">{t.name}</div>
+                    <div className="cg-tier-meta">{t.minC}+ COINS</div>
                   </div>
-                  <div style={{color:t.paint,fontSize:8,letterSpacing:2,fontWeight:700}}>{t.name.toUpperCase()}</div>
-                  <div style={{color:"#182840",fontSize:7,marginTop:2,fontFamily:FONT_UI}}>{t.minC}+ coins</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Controls */}
-            <div style={{color:"#253a52",fontSize:10,lineHeight:2.8,textAlign:"center",marginBottom:28,letterSpacing:1,fontFamily:FONT_UI,fontWeight:600}}>
-              W / ↑ &nbsp; ACCELERATE &nbsp;·&nbsp; S / ↓ &nbsp; BRAKE &nbsp;·&nbsp; A D / ← → &nbsp; STEER<br/>
-              <span style={{color:"#1a2d42",letterSpacing:2}}>SPACE — START / PAUSE &nbsp;&nbsp; 3 LIVES</span>
-            </div>
-
-            <button onClick={()=>startRef.current?.()}
-              style={{padding:"15px 68px",background:"linear-gradient(135deg,#ffee44,#ffaa00)",
-                color:"#06070e",border:"none",borderRadius:7,fontSize:22,fontWeight:900,cursor:"pointer",
-                fontFamily:FONT_TITLE,letterSpacing:7,
-                boxShadow:"0 0 28px #ffaa00,0 0 56px #ff880033,0 4px 0 #886600",
-                transition:"all 0.15s",outline:"none"}}
-              onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.05)";e.currentTarget.style.boxShadow="0 0 40px #ffaa00,0 0 80px #ff880055,0 4px 0 #886600";}}
-              onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.boxShadow="0 0 28px #ffaa00,0 0 56px #ff880033,0 4px 0 #886600";}}
-              onMouseDown={e=>e.currentTarget.style.transform="scale(0.97)"}
-              onMouseUp={e=>e.currentTarget.style.transform="scale(1.05)"}
-            >DRIVE</button>
-
-            {ui.highScore>0&&(
-              <div style={{marginTop:18,color:"#1e3248",fontSize:11,letterSpacing:3,fontFamily:FONT_UI,fontWeight:600}}>
-                🏆 BEST SCORE: {ui.highScore.toLocaleString()}
+                ))}
               </div>
-            )}
 
-            {/* Powerup legend */}
-            <div style={{display:"flex",gap:24,marginTop:24}}>
-              {PUPS.map(p=>(
-                <div key={p.t} style={{textAlign:"center"}}>
-                  <div style={{width:34,height:34,borderRadius:"50%",border:`2px solid ${p.color}44`,
-                    background:`${p.color}14`,display:"flex",alignItems:"center",justifyContent:"center",
-                    fontSize:16,margin:"0 auto 4px",boxShadow:`0 0 10px ${p.color}1a`}}>{p.label}</div>
-                  <div style={{color:p.color+"66",fontSize:7,letterSpacing:2,fontFamily:FONT_UI,fontWeight:600}}>{p.desc}</div>
-                </div>
-              ))}
+              <div className="cg-controls-line">
+                <span>W / ↑ THROTTLE</span>
+                <span>A D / ← → STEER</span>
+                <span>S / ↓ BRAKE</span>
+                <span>SPACE PAUSE</span>
+              </div>
+
+              <button
+                className="cg-primary"
+                onClick={()=>startRef.current?.()}
+              >IGNITE ENGINE</button>
+
+              {ui.highScore>0&&(
+                <div className="cg-record">BEST RUN: {ui.highScore.toLocaleString()}</div>
+              )}
+
+              <div className="cg-powerups">
+                {PUPS.map(p=>(
+                  <div key={p.t} className="cg-powerup-chip" style={{borderColor:`${p.color}66`, color:p.color}}>
+                    <span>{p.desc}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* ── Game Over screen ─────────────────────────────────── */}
         {ui.phase==="gameover"&&(
-          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(4,4,14,0.96)"}}>
+          <div className="cg-overlay cg-overlay-over">
+            <div className="cg-panel cg-panel-over">
+              <div className="cg-over-kicker">SESSION TERMINATED</div>
+              <div className="cg-over-title">OUT OF CONTROL</div>
+              <div className="cg-over-score">{ui.score.toLocaleString()}</div>
 
-            <div style={{fontSize:58,fontWeight:900,color:"#ff2233",letterSpacing:8,
-              textShadow:"0 0 36px #ff0000,0 0 80px #aa000055,0 3px 0 #660000"}}>
-              WRECKED!
-            </div>
+              {ui.newHigh&&<div className="cg-over-record">NEW PERSONAL BEST</div>}
+              {!ui.newHigh&&ui.highScore>0&&<div className="cg-over-record">BEST: {ui.highScore.toLocaleString()}</div>}
 
-            <div style={{fontSize:46,color:"#ffdd00",marginTop:14,fontWeight:700,
-              textShadow:"0 0 18px #ffaa00,0 0 40px #ff880033"}}>
-              ⭐ {ui.score.toLocaleString()}
-            </div>
-
-            {ui.newHigh&&(
-              <div style={{color:"#ffaa44",fontWeight:900,fontSize:18,marginTop:10,
-                textShadow:"0 0 18px #ff8800",letterSpacing:4,fontFamily:FONT_UI}}>
-                🏆 &nbsp; NEW RECORD!
+              <div className="cg-over-grid">
+                <div className="cg-over-item"><span>COINS</span><strong>{ui.coins}</strong></div>
+                <div className="cg-over-item"><span>TIER</span><strong>{TIERS[ui.tier]?.name}</strong></div>
+                <div className="cg-over-item"><span>COLLISIONS</span><strong>{ui.stats?.obstaclesHit||0}</strong></div>
+                <div className="cg-over-item"><span>POWER-UPS</span><strong>{ui.stats?.pupsCollected||0}</strong></div>
               </div>
-            )}
-            {!ui.newHigh&&ui.highScore>0&&(
-              <div style={{color:"#1e2d40",fontSize:11,marginTop:8,letterSpacing:3,fontFamily:FONT_UI,fontWeight:600}}>
-                BEST: ⭐ {ui.highScore.toLocaleString()}
-              </div>
-            )}
 
-            {/* Stats grid */}
-            <div style={{display:"flex",gap:14,marginTop:22,marginBottom:6}}>
-              {[
-                {label:"COINS",value:ui.coins,icon:"🪙"},
-                {label:"CAR",value:TIERS[ui.tier]?.name,icon:"🚗"},
-                {label:"HITS",value:ui.stats?.obstaclesHit||0,icon:"💥"},
-                {label:"POWER-UPS",value:ui.stats?.pupsCollected||0,icon:"⚡"},
-              ].map(s=>(
-                <div key={s.label} style={{textAlign:"center",background:"rgba(255,255,255,0.04)",
-                  border:"1px solid #1a2535",borderRadius:10,padding:"12px 16px",
-                  boxShadow:"inset 0 0 8px rgba(0,0,0,0.3)"}}>
-                  <div style={{fontSize:22,marginBottom:5}}>{s.icon}</div>
-                  <div style={{color:"#dde8ff",fontSize:18,fontWeight:700}}>{s.value}</div>
-                  <div style={{color:"#1e2d42",fontSize:7,letterSpacing:2,marginTop:3,fontFamily:FONT_UI,fontWeight:600}}>{s.label}</div>
-                </div>
-              ))}
+              <button className="cg-primary" onClick={()=>startRef.current?.()}>RUN IT BACK</button>
             </div>
-
-            <button onClick={()=>startRef.current?.()}
-              style={{marginTop:22,padding:"14px 64px",
-                background:"linear-gradient(135deg,#ffee44,#ffaa00)",
-                color:"#06070e",border:"none",borderRadius:7,fontSize:20,fontWeight:900,cursor:"pointer",
-                fontFamily:FONT_TITLE,letterSpacing:5,
-                boxShadow:"0 0 26px #ffaa00,0 3px 0 #886600",transition:"all 0.15s",outline:"none"}}
-              onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.05)";}}
-              onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";}}
-              onMouseDown={e=>e.currentTarget.style.transform="scale(0.97)"}
-              onMouseUp={e=>e.currentTarget.style.transform="scale(1.05)"}
-            >RETRY</button>
           </div>
         )}
       </div>
@@ -1031,6 +986,253 @@ function CarGo() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        .cg-overlay {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(180deg, rgba(3, 6, 14, 0.84), rgba(3, 6, 14, 0.95));
+          overflow: hidden;
+        }
+        .cg-overlay-menu {
+          animation: cgFadeIn 520ms ease-out both;
+        }
+        .cg-orb {
+          position: absolute;
+          filter: blur(18px);
+          border-radius: 999px;
+          opacity: 0.5;
+          animation: cgFloat 7s ease-in-out infinite;
+        }
+        .cg-orb-a {
+          width: 260px;
+          height: 260px;
+          left: -90px;
+          top: 12%;
+          background: radial-gradient(circle, rgba(42, 189, 255, 0.42), rgba(42, 189, 255, 0));
+        }
+        .cg-orb-b {
+          width: 320px;
+          height: 320px;
+          right: -130px;
+          bottom: -70px;
+          background: radial-gradient(circle, rgba(255, 177, 76, 0.42), rgba(255, 177, 76, 0));
+          animation-delay: 1.4s;
+        }
+        .cg-grid {
+          position: absolute;
+          inset: 0;
+          background-image:
+            linear-gradient(rgba(73, 121, 170, 0.12) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(73, 121, 170, 0.12) 1px, transparent 1px);
+          background-size: 38px 38px;
+          mask-image: radial-gradient(circle at center, black 42%, transparent 90%);
+          animation: cgSweep 16s linear infinite;
+        }
+        .cg-panel {
+          position: relative;
+          width: min(92vw, 780px);
+          border: 1px solid rgba(116, 172, 228, 0.28);
+          border-radius: 16px;
+          background: linear-gradient(160deg, rgba(15, 25, 39, 0.92), rgba(8, 14, 24, 0.88));
+          box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(20, 37, 61, 0.7);
+          backdrop-filter: blur(5px);
+          color: #dbe9fb;
+          animation: cgRise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+        .cg-panel-menu {
+          padding: 28px 32px;
+          text-align: center;
+        }
+        .cg-kicker {
+          font: 700 11px ${FONT_UI};
+          letter-spacing: 3px;
+          color: #74ace4;
+          margin-bottom: 12px;
+        }
+        .cg-title {
+          font: 800 clamp(32px, 6vw, 62px) ${FONT_TITLE};
+          letter-spacing: 7px;
+          color: #f6fbff;
+          line-height: 1.02;
+          text-shadow: 0 0 36px rgba(73, 167, 255, 0.3);
+        }
+        .cg-subtitle {
+          margin-top: 12px;
+          color: #7f9ec0;
+          font: 500 13px ${FONT_UI};
+          letter-spacing: 1.3px;
+        }
+        .cg-tiers {
+          margin-top: 22px;
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .cg-tier-card {
+          border: 1px solid rgba(110, 154, 204, 0.34);
+          border-radius: 10px;
+          padding: 10px 8px;
+          background: rgba(11, 20, 33, 0.72);
+        }
+        .cg-tier-index {
+          font: 700 11px ${FONT_UI};
+          letter-spacing: 2px;
+        }
+        .cg-tier-name {
+          margin-top: 6px;
+          font: 700 12px ${FONT_TITLE};
+          letter-spacing: 0.7px;
+          color: #d9eaff;
+        }
+        .cg-tier-meta {
+          margin-top: 4px;
+          font: 500 10px ${FONT_UI};
+          letter-spacing: 1px;
+          color: #7293b9;
+        }
+        .cg-controls-line {
+          margin-top: 18px;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 8px;
+        }
+        .cg-controls-line span {
+          font: 600 10px ${FONT_UI};
+          letter-spacing: 1.4px;
+          color: #88a8cd;
+          border: 1px solid rgba(114, 159, 209, 0.35);
+          border-radius: 999px;
+          padding: 5px 9px;
+          background: rgba(8, 15, 25, 0.72);
+        }
+        .cg-primary {
+          margin-top: 20px;
+          border: none;
+          cursor: pointer;
+          border-radius: 10px;
+          padding: 13px 28px;
+          font: 800 14px ${FONT_TITLE};
+          letter-spacing: 3px;
+          color: #061018;
+          background: linear-gradient(130deg, #7de6ff, #54b6ff 45%, #ffb367);
+          box-shadow: 0 10px 30px rgba(84, 182, 255, 0.4);
+          transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+        .cg-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 14px 35px rgba(84, 182, 255, 0.5);
+        }
+        .cg-record {
+          margin-top: 12px;
+          color: #91b3da;
+          font: 700 11px ${FONT_UI};
+          letter-spacing: 2px;
+        }
+        .cg-powerups {
+          margin-top: 14px;
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .cg-powerup-chip {
+          border: 1px solid rgba(110, 165, 222, 0.5);
+          border-radius: 999px;
+          padding: 6px 10px;
+          background: rgba(8, 15, 25, 0.62);
+          font: 700 10px ${FONT_UI};
+          letter-spacing: 1.5px;
+        }
+        .cg-overlay-over {
+          background: linear-gradient(180deg, rgba(8, 8, 15, 0.9), rgba(8, 8, 15, 0.96));
+        }
+        .cg-panel-over {
+          width: min(90vw, 660px);
+          padding: 26px 26px 22px;
+          text-align: center;
+          border-color: rgba(255, 92, 92, 0.36);
+          box-shadow: 0 24px 68px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(78, 25, 25, 0.62);
+        }
+        .cg-over-kicker {
+          color: #f27f7f;
+          font: 700 11px ${FONT_UI};
+          letter-spacing: 3px;
+        }
+        .cg-over-title {
+          margin-top: 10px;
+          color: #ffe6e6;
+          font: 800 clamp(28px, 5vw, 48px) ${FONT_TITLE};
+          letter-spacing: 5px;
+          line-height: 1.05;
+        }
+        .cg-over-score {
+          margin-top: 12px;
+          color: #7dd6ff;
+          font: 800 clamp(28px, 6vw, 52px) ${FONT_TITLE};
+          letter-spacing: 2px;
+          text-shadow: 0 0 26px rgba(84, 182, 255, 0.38);
+        }
+        .cg-over-record {
+          margin-top: 8px;
+          color: #88aacd;
+          font: 700 11px ${FONT_UI};
+          letter-spacing: 2.5px;
+        }
+        .cg-over-grid {
+          margin-top: 18px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .cg-over-item {
+          border: 1px solid rgba(88, 126, 171, 0.35);
+          border-radius: 10px;
+          padding: 10px;
+          background: rgba(9, 15, 25, 0.7);
+        }
+        .cg-over-item span {
+          display: block;
+          color: #7d9dc1;
+          font: 700 10px ${FONT_UI};
+          letter-spacing: 1.6px;
+        }
+        .cg-over-item strong {
+          margin-top: 6px;
+          display: block;
+          color: #e2efff;
+          font: 700 16px ${FONT_TITLE};
+          letter-spacing: 0.4px;
+        }
+        @keyframes cgFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes cgRise {
+          from { opacity: 0; transform: translateY(20px) scale(0.985); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes cgFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-12px); }
+        }
+        @keyframes cgSweep {
+          from { transform: translate3d(-8px, -8px, 0); }
+          to { transform: translate3d(8px, 8px, 0); }
+        }
+        @media (max-width: 900px) {
+          .cg-panel-menu { padding: 20px 15px; }
+          .cg-title { letter-spacing: 3px; }
+          .cg-subtitle { font-size: 12px; letter-spacing: 1px; }
+          .cg-tiers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .cg-over-grid { grid-template-columns: 1fr; }
+          .cg-over-item strong { font-size: 14px; }
+        }
+      `}</style>
     </div>
   );
 }
