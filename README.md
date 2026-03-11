@@ -27,17 +27,32 @@ The game runs directly in the browser using:
 
 ### Running Locally
 
-Simply open `cargo.html` in your browser, or use a local server:
+Simply open `index.html` in your browser, or use a local server:
 
 ```bash
 python -m http.server 8000
 ```
 
-Then visit http://localhost:8000/cargo.html
+Then visit http://localhost:8000/
 
 ## Deployment to GitHub Pages
 
-This project is ready for GitHub Pages deployment. Simply push to your repository and enable GitHub Pages in settings.
+This project is now configured for GitHub Pages with `index.html` at the repository root.
+
+1. Push your latest code to GitHub.
+2. Open your repository on GitHub.
+3. Go to **Settings** -> **Pages**.
+4. Under **Build and deployment**, set:
+	- **Source**: `Deploy from a branch`
+	- **Branch**: `main` (or your default branch)
+	- **Folder**: `/ (root)`
+5. Save and wait 1-2 minutes.
+
+Your game will be available at:
+`https://<your-username>.github.io/<your-repo-name>/`
+
+Legacy link support:
+- `cargo.html` now redirects to `index.html`.
 
 ## License
 

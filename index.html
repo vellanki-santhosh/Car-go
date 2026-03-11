@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>CarGo Pro</title>
+  <style>
+    body { margin: 0; background: radial-gradient(circle at top, #0b1a35, #050811 80%); color: #eef; font-family: system-ui, sans-serif; overflow: hidden; }
+    #root { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+    .hint { position: fixed; bottom: 12px; left: 12px; font-size: 12px; color: rgba(255,255,255,0.75); text-shadow: 0 0 8px rgba(0,0,0,0.45); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div class="hint">Use Arrow Keys / WASD to drive. Press SPACE to pause.</div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel" data-presets="env,react" src="./CarGo_Pro.jsx"></script>
+</body>
+</html>
